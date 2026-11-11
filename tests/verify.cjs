@@ -26,7 +26,7 @@ const ctx = vm.createContext({
   setTimeout:()=>1,clearTimeout(){},console
 });
 vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8'), ctx);
-vm.runInContext('globalThis.api = {lessons, render, renderLab, renderReview, renderReady, state, save, escapeHTML};', ctx);
+vm.runInContext('globalThis.api = {lessons, render, renderLab, renderReview, renderReady, state, save, escapeHTML, highlightJava, code, getNextLesson, copyCode};', ctx);
 const {api} = ctx;
 assert.equal(api.lessons.length,9);
 assert.equal(api.lessons.reduce((n,l)=>n+l.questions.length,0),18);
@@ -46,7 +46,7 @@ for (const route of ['inicio',...ids,'laboratorio','repaso','preparacion']) {
   assert(!html.includes('undefined'),route+' contains no undefined data');
   assert(!html.includes('[object Object]'),route+' contains no accidental objects');
   for(const match of html.matchAll(/href="#([a-z]+)"/g)) {
-    assert(['inicio','laboratorio','repaso','preparacion',...ids].includes(match[1]),'valid route '+match[1]);
+    assert(['inicio','ruta','laboratorio','repaso','preparacion',...ids].includes(match[1]),'valid route '+match[1]);
   }
 }
 api.state.notes.base='<script>alert("test")</script>';
@@ -87,9 +87,31 @@ console.log('OK: all 13 routes render; 18 questions; filters, stored notes, esca
 
 // Compile the full Java classes actually shown in the lessons.
 const decode=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
+// Highlighting must preserve the exact source, including strings, comments and HTML-like input.
+for(const sample of ['public class Hola { String texto = "<script> & \\"hola\\""; }','// public class 42\nint n = 12;','/* private int */\nString a = "return 12";','if (a < 3 && a > 0) return;']) {
+  assert.equal(decode(api.highlightJava(sample).replace(/<[^>]+>/g,'')),sample);
+}
+assert(api.highlightJava('public class Hola').includes('syntax-keyword'));
+assert(api.highlightJava('// public int 1').startsWith('<span class="syntax-comment">'));
+const sampleCode=api.code('System.out.println("Hola");','Fragmento dentro de main','Hola');
+assert(sampleCode.includes('data-copy-code'));
+assert(sampleCode.includes('<samp>Hola</samp>'));
+api.state.completed=[];api.state.lastLesson='clases';
+assert.equal(api.getNextLesson().id,'clases','resume an unfinished visited lesson');
+api.state.completed=['clases'];
+assert.equal(api.getNextLesson().id,'base','do not resume a completed lesson');
+api.state.completed=Array.from(ids);ctx.location.hash='#inicio';api.render();
+assert(element('main').innerHTML.includes('Revisar mi preparación'));
+api.state.completed=[];api.state.lastLesson='base';
+for(const file of ['literata.ttf','literata-italic.ttf','source-sans-3.ttf','jetbrains-mono.ttf']) {
+  const font=fs.readFileSync(path.join(root,'vendor','fonts',file));
+  assert.equal(font.readUInt32BE(0),0x00010000,'valid TrueType header: '+file);
+}
+for(const file of ['OFL-Literata.txt','OFL-Source-Sans-3.txt','OFL-JetBrains-Mono.txt']) assert(fs.readFileSync(path.join(root,'vendor','fonts',file),'utf8').includes('SIL OPEN FONT LICENSE'));
+console.log('OK: next lesson selection, finished route, safe syntax highlighting, output panels and local fonts.');
 const examples=new Map();
 for(const lesson of api.lessons) {
-  for(const m of lesson.body.matchAll(/<pre><code>([\s\S]*?)<\/code><\/pre>/g)) {
+  for(const m of lesson.body.matchAll(/<pre[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)) {
     const source=decode(m[1]);
     const className=source.match(/public class (\w+)/)?.[1];
     if(className) examples.set(className,source);
