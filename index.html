@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#202b27">
+  <meta name="description" content="Un espacio para aprender Java y programación orientada a objetos, practicar y desarrollar tu propio criterio.">
+  <title>Java a tu ritmo · Cuaderno de aprendizaje</title>
+  <link rel="stylesheet" href="vendor/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <aside class="sidebar" id="sidebar">
+    <button id="close-menu" class="close-menu" aria-label="Cerrar menú">×</button>
+    <a class="brand" href="#inicio" aria-label="Java a tu ritmo, inicio"><span class="brand-icon">j<span>.</span></span><span>java<span class="brand-sub">a tu ritmo</span></span></a>
+    <p class="nav-label">TU ESPACIO DE APRENDIZAJE</p>
+    <nav aria-label="Principal">
+      <a class="nav-main" href="#inicio"><span aria-hidden="true">⌂</span> Mi ruta</a>
+      <p class="nav-label route-label">PASO A PASO</p>
+      <div id="lesson-nav"></div>
+      <div class="nav-divider"></div>
+      <a class="nav-main" href="#laboratorio"><span aria-hidden="true">⚗</span> Laboratorio de objetos</a>
+      <a class="nav-main" href="#repaso"><span aria-hidden="true">◇</span> Practicar conceptos</a>
+      <a class="nav-main" href="#preparacion"><span aria-hidden="true">✓</span> Antes de tu tarea</a>
+    </nav>
+    <div class="sidebar-bottom"><span class="offline-dot"></span> Local, sin cuentas ni conexión<p>Tu progreso se guarda en este navegador.</p></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><button id="menu-button" class="icon-button" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir o cerrar menú">☰</button><div><span class="top-label">CUADERNO DE APRENDIZAJE</span><span class="top-separator">/</span><span id="breadcrumb">Mi ruta</span></div><span class="level-badge">Java · Nivel inicial</span></header>
+    <main id="main" tabindex="-1"></main>
+    <footer>Hecho para comprender, experimentar y construir con tus propias ideas.<span>Java a tu ritmo <span aria-hidden="true">↗</span></span></footer>
+  </div>
+  <div id="toast" role="status" class="app-toast" hidden></div>
+</body>
+</html>
