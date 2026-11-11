@@ -21,9 +21,11 @@ El laboratorio es una simulación JavaScript. La web no compila ni ejecuta Java 
 
 El progreso se guarda con `localStorage` bajo la clave `java-a-tu-ritmo-v1`. No se envía información. La disponibilidad y conservación del almacenamiento de páginas abiertas con `file://` dependen del navegador; si falla, se puede trabajar durante la sesión y exportar la bitácora. El modo privado, borrar los datos, mover archivos o usar otro origen puede impedir recuperar el mismo avance. Conviene exportar desde “Antes de tu tarea”. No hay importación ni sincronización de progreso.
 
-## Más adelante: GitHub Pages
+## Publicación en GitHub Pages
 
-Los archivos funcionan como sitio estático, con rutas relativas y navegación mediante fragmentos. Cuando decidas publicarlo, coloca `index.html`, `styles.css`, `app.js` y la carpeta `vendor/` en la carpeta elegida como fuente de GitHub Pages. No hay pasos de build. La publicación no se ha realizado. El avance del navegador local no se transfiere al dominio público; puedes conservar tus notas exportándolas antes.
+Repositorio: [PipeIcg/java-a-tu-ritmo](https://github.com/PipeIcg/java-a-tu-ritmo). Pages está configurado para publicar desde `main`, carpeta raíz. Dirección del sitio: [Java a tu ritmo](https://pipeicg.github.io/java-a-tu-ritmo/).
+
+Los archivos funcionan como sitio estático, con rutas relativas y navegación mediante fragmentos. Conserva `index.html`, `styles.css`, `app.js`, `.nojekyll` y la carpeta `vendor/` en la raíz. `.nojekyll` evita procesar los archivos con Jekyll. No hay pasos de build. El avance del navegador local no se transfiere al dominio público; puedes conservar tus notas exportándolas antes.
 
 ## Bootstrap local
 
