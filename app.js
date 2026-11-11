@@ -1,8 +1,48 @@
 'use strict';
 
-// Aplicación estática: no ejecuta Java, no envía datos y no necesita dependencias.
+// Aplicación estática: no ejecuta Java ni envía datos. Recursos incluidos localmente.
 const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const code = (text, label = 'Java · ejemplo de aprendizaje') => `<p class="code-label">${label}</p><pre><code>${escapeHTML(text)}</code></pre>`;
+const code = (text, label = 'Java · ejemplo de aprendizaje', output = null) => {
+  const language = /^Terminal/.test(label) ? 'terminal' : /^(Relación|Ejemplo de organización)/.test(label) ? 'text' : 'java';
+  const filename = text.match(/public class (\w+)/)?.[1];
+  const title = filename ? `${filename}.java` : language==='terminal' ? 'Terminal' : language==='text' ? 'Esquema de aprendizaje' : /\.java$/.test(label) ? label : 'Fragmento de Java';
+  return `<figure class="code-example" data-language="${language}"><figcaption class="code-toolbar"><span class="code-title"><span class="code-file-icon" aria-hidden="true">${language==='terminal'?'>_':'{ }'}</span>${escapeHTML(title)}</span><span class="code-tools"><span class="code-language">${language==='java'?'JAVA':language==='terminal'?'TERMINAL':'ESQUEMA'}</span><button type="button" class="copy-code" data-copy-code aria-label="Copiar ${escapeHTML(title)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg><span>Copiar</span></button></span></figcaption><pre tabindex="0" aria-label="${escapeHTML(title)}"><code>${escapeHTML(text)}</code></pre>${output===null?'':`<div class="code-output"><span class="output-heading"><span aria-hidden="true">↳</span> SALIDA ESPERADA</span><pre><samp>${escapeHTML(output)}</samp></pre></div>`}<div class="code-context">${escapeHTML(label)}</div></figure>`;
+};
+
+// Tokenizador para los ejemplos introductorios: no ejecuta el código.
+// Cada token se escapa una sola vez; el texto de los ejemplos se conserva.
+function highlightJava(source) {
+  const tokens = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:public|private|protected|class|static|void|new|return|this|if|else|throw|for|import|extends|implements|final|int|double|boolean|long|float|char|short|byte|true|false|null)\b|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b/g;
+  let html='', end=0;
+  for(const match of source.matchAll(tokens)) {
+    html+=escapeHTML(source.slice(end,match.index));
+    const token=match[0];
+    const kind=token.startsWith('//')||token.startsWith('/*')?'comment':/^['"]/.test(token)?'string':/^\d/.test(token)?'number':/^(public|private|protected|class|static|void|new|return|this|if|else|throw|for|import|extends|implements|final|int|double|boolean|long|float|char|short|byte|true|false|null)$/.test(token)?'keyword':/^[A-Z]/.test(token)?'type':/^\s*\(/.test(source.slice(match.index+token.length))?'method':null;
+    html+=kind?`<span class="syntax-${kind}">${escapeHTML(token)}</span>`:escapeHTML(token);
+    end=match.index+token.length;
+  }
+  return html+escapeHTML(source.slice(end));
+}
+function enhanceCode() {
+  main.querySelectorAll('.code-example[data-language="java"] > pre > code').forEach(el=>{
+    el.innerHTML=highlightJava(el.textContent);
+  });
+}
+async function copyCode(button) {
+  const block=button.closest('.code-example').querySelector('pre code');
+  const text=block.textContent;
+  try {
+    if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(text);
+    const label=button.querySelector('span');label.textContent='Copiado';
+    button.classList.add('copied');toast('Código copiado. Pégalo en tu editor de Java.');
+    setTimeout(()=>{label.textContent='Copiar';button.classList.remove('copied');},2200);
+  } catch {
+    const range=document.createRange();range.selectNodeContents(block);
+    const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+    toast('Código seleccionado. Usa Ctrl+C o la opción Copiar de tu dispositivo.');
+  }
+}
 const note = (text, amber = false) => `<div class="note${amber ? ' amber' : ''}">${text}</div>`;
 const lessons = [
   {
@@ -18,7 +58,7 @@ const lessons = [
         paginas = paginas + 3;
         System.out.println("Páginas leídas: " + paginas);
     }
-}`) + `<p>La salida será <code>Páginas leídas: 15</code>. <code>=</code> asigna un valor; <code>+</code> suma números o concatena texto, según los operandos. Los paréntesis permiten hacer explícito el orden: <code>"Total: " + (2 + 3)</code> muestra <code>Total: 5</code>.</p>
+}`, 'Hola.java', 'Páginas leídas: 15') + `<p>La salida será <code>Páginas leídas: 15</code>. <code>=</code> asigna un valor; <code>+</code> suma números o concatena texto, según los operandos. Los paréntesis permiten hacer explícito el orden: <code>"Total: " + (2 + 3)</code> muestra <code>Total: 5</code>.</p>
     <h3>Del archivo a la ejecución</h3><p>Necesitas un JDK: incluye herramientas para compilar y ejecutar Java. Comprueba en una terminal <code>java -version</code> y <code>javac -version</code>. Un editor te ayuda a escribir, pero no sustituye el JDK.</p>` + code(`javac -encoding UTF-8 Hola.java
 java Hola`, 'Terminal · dentro de la carpeta de Hola.java') + `<p><code>javac</code> compila el código a archivos <code>.class</code>; <code>java Hola</code> inicia el programa en la máquina virtual de Java. El IDE puede hacer estos pasos por ti.</p>` + note('En estos ejemplos usamos el punto de entrada clásico <code>public static void main(String[] args)</code>. Por ahora, identifica el bloque donde empiezan las instrucciones; más adelante separaremos ese inicio de los objetos.') + `<h3>Tres errores para reconocer</h3><ul><li><strong>Compilación:</strong> falta un <code>;</code>, un nombre no existe o un tipo no coincide.</li><li><strong>Ejecución:</strong> el programa compila, pero falla al intentar una operación, por ejemplo usar una referencia <code>null</code>.</li><li><strong>Lógica:</strong> termina, pero el resultado no corresponde a lo que esperabas.</li></ul>`,
     challenge:'Crea un programa que guarde un título de cuento y dos cantidades de páginas leídas. Muestra el título y la suma. Antes de ejecutarlo, anota la salida que esperas. Luego cambia un valor y repite.',
@@ -68,7 +108,7 @@ class Marcador {
 Contador segundo = new Contador(10);
 primero.incrementar();
 System.out.println(primero.getValor()); // 1
-System.out.println(segundo.getValor()); // 10`, 'Fragmento dentro de main') + `<p>Ambos objetos comparten la definición de su clase, pero cada uno tiene su propio <code>valor</code>. <code>primero</code> y <code>segundo</code> son variables que guardan referencias a esos objetos.</p>` + note('No confundas un atributo con una variable local. Un atributo pertenece al objeto; una variable declarada dentro de un método solo está disponible en su ámbito.') + `<h3>Busca coherencia</h3><p>Una buena responsabilidad puede describirse en una oración breve. “Mantener y consultar un conteo” es una responsabilidad coherente. Imprimir menús, guardar archivos y representar personas en una sola clase mezcla propósitos.</p><p><a href="#laboratorio">Abre el laboratorio</a> para crear dos contadores y observar sus estados.</p>`,
+System.out.println(segundo.getValor()); // 10`, 'Fragmento dentro de main', '1\n10') + `<p>Ambos objetos comparten la definición de su clase, pero cada uno tiene su propio <code>valor</code>. <code>primero</code> y <code>segundo</code> son variables que guardan referencias a esos objetos.</p>` + note('No confundas un atributo con una variable local. Un atributo pertenece al objeto; una variable declarada dentro de un método solo está disponible en su ámbito.') + `<h3>Busca coherencia</h3><p>Una buena responsabilidad puede describirse en una oración breve. “Mantener y consultar un conteo” es una responsabilidad coherente. Imprimir menús, guardar archivos y representar personas en una sola clase mezcla propósitos.</p><p><a href="#laboratorio">Abre el laboratorio</a> para crear dos contadores y observar sus estados.</p>`,
     challenge:'Diseña en papel una clase Mascota: piensa en dos atributos y dos comportamientos coherentes. Luego describe dos instancias con valores diferentes. Distingue qué pertenece a la definición y qué pertenece a cada instancia.',
     hint:'Un nombre describe estado; una acción describe comportamiento. No necesitas escribir todos los getters y setters posibles.',reflection:'¿Cambiar un objeto cambia automáticamente a todas las instancias de su clase? Explica con un ejemplo.',
     questions:[{q:'En Contador, ¿qué es valor?',options:['Un objeto de tipo Contador','Un atributo de instancia','Un constructor'],answer:1,why:'Es un campo declarado en el cuerpo de la clase; cada instancia tiene su propio valor.'},{q:'Si a y b son dos objetos distintos, ¿a.incrementar() modifica b?',options:['Sí, porque comparten clase','Siempre, porque son referencias','No, este método modifica el estado del objeto referenciado por a'],answer:2,why:'Compartir una definición de clase no implica compartir los atributos de instancia.'}]
@@ -110,7 +150,7 @@ System.out.println(a.getValor()); // 3`) + `<p><code>b = a</code> copia la refer
     }
 }`) + `<p><code>calcularArea()</code> consulta atributos y devuelve un cálculo. No imprime ni modifica dimensiones. Puedes usar su resultado para mostrarlo, compararlo o guardarlo.</p>` + code(`Rectangulo figura = new Rectangulo(3.0, 4.0);
 double area = figura.calcularArea();
-System.out.println("Área: " + area); // Área: 12.0`) + `<h3>Encapsular es cuidar las reglas</h3><p><code>private</code> restringe el acceso al interior de la clase. <code>public</code> expone una operación a quienes la usan. Un getter consulta un dato; un setter puede actualizarlo. No necesitas exponer un setter para cada atributo: ofrece las operaciones que tengan sentido.</p>` + code(`public class Lampara {
+System.out.println("Área: " + area); // Área: 12.0`, 'Fragmento dentro de main', 'Área: 12.0') + `<h3>Encapsular es cuidar las reglas</h3><p><code>private</code> restringe el acceso al interior de la clase. <code>public</code> expone una operación a quienes la usan. Un getter consulta un dato; un setter puede actualizarlo. No necesitas exponer un setter para cada atributo: ofrece las operaciones que tengan sentido.</p>` + code(`public class Lampara {
     private boolean encendida;
 
     public void encender() {
@@ -194,7 +234,7 @@ un libro puede estar referenciado por cero o muchos estantes.`, 'Relación conce
         estante.agregar(new Libro("Viaje al centro de la Tierra"));
         estante.mostrarTitulos();
     }
-}`, 'Main.java · práctica sobre lecturas') + code(`javac -encoding UTF-8 Libro.java Estante.java Main.java
+}`, 'Main.java · práctica sobre lecturas', 'El jardín secreto\nViaje al centro de la Tierra') + code(`javac -encoding UTF-8 Libro.java Estante.java Main.java
 java Main`, 'Terminal · dentro de la carpeta lecturas') + `<p>La salida muestra los dos títulos, uno por línea. Si cambias una clase, recompila antes de ejecutar para observar la versión nueva.</p><h3>¿Por qué ayuda separarlas?</h3><p>Si cambia cómo se muestra un conjunto de libros, puedes localizar esa operación en Estante. Si Libro mantiene un contrato sencillo, otro programa puede reutilizarlo. Los archivos ayudan a encontrar el código, pero no corrigen por sí solos responsabilidades mezcladas.</p>` + note('La clase que contiene main inicia esta demostración. No tiene por qué almacenar todos los datos ni implementar todas las reglas. Los métodos static pertenecen a la clase; los de instancia se invocan sobre objetos.') + `<h3>Un ciclo corto de prueba</h3><ol><li>Escribe la salida esperada antes de ejecutar.</li><li>Compila y lee el primer error completo, con archivo y línea.</li><li>Corrige una causa a la vez y vuelve a compilar.</li><li>Ejecuta con datos normales y casos límite.</li><li>Comprueba que el resultado coincide con la intención.</li></ol><div class="table-wrap"><table><thead><tr><th>Síntoma</th><th>Qué revisar</th></tr></thead><tbody><tr><td>cannot find symbol</td><td>Nombres, mayúsculas, ámbitos y archivos compilados.</td></tr><tr><td>constructor ... cannot be applied</td><td>Cantidad, orden y tipos de argumentos.</td></tr><tr><td>Could not find or load main class</td><td>Carpeta actual, nombre de clase y compilación.</td></tr><tr><td>Salida vieja</td><td>Archivos guardados y recompilación.</td></tr></tbody></table></div>`,
     challenge:'Arma el pequeño proyecto de lecturas y ejecútalo. Cambia un título y recompila. Luego provoca de forma controlada un error de nombre y aprende a localizarlo. Guarda una captura legible de la carpeta y otra de la salida correcta.',hint:'En la terminal debes estar en la carpeta que contiene los tres archivos. Usa Main sin la extensión .java o .class al ejecutar la clase compilada.',reflection:'¿Puedes cambiar el texto del main sin modificar Libro? ¿En qué otro proyecto podrías reutilizar Libro?',
     questions:[{q:'¿Dónde guardas public class Estante en este proyecto?',options:['En estante.txt','En Estante.java','Obligatoriamente dentro de Main.java'],answer:1,why:'El nombre del archivo debe coincidir con la clase pública de nivel superior, incluidas las mayúsculas.'},{q:'¿Qué demuestra modularidad además de tener varios archivos?',options:['Que cada archivo tiene el mismo número de líneas','Que toda la lógica está en main','Que las responsabilidades están separadas y los cambios se pueden localizar'],answer:2,why:'La separación física ayuda cuando refleja límites claros de responsabilidad y colaboración.'}]
@@ -230,27 +270,30 @@ let toastTimer;
 function toast(message) {const el=document.getElementById('toast');el.textContent=message;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,3500);}
 const main = document.getElementById('main');
 function nav() {
-  const hash=location.hash.slice(1)||'inicio';
+  const hash=location.hash==='#ruta'?'inicio':location.hash.slice(1)||'inicio';
   document.getElementById('lesson-nav').innerHTML=lessons.map((l,i)=>`<a class="lesson-link${hash===l.id?' active':''}" href="#${l.id}"${hash===l.id?' aria-current="page"':''}><span class="step-num${state.completed.includes(l.id)?' done':''}">${state.completed.includes(l.id)?'✓':String(i+1).padStart(2,'0')}</span>${l.short}</a>`).join('');
   document.querySelectorAll('.nav-main').forEach(a=>{const active=a.hash==='#'+hash;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
 }
 function intro(kicker,title,description) { return `<div class="page-intro"><div class="eyebrow">${kicker}</div><h1>${title}</h1><p>${description}</p></div>`; }
 function dashboard() {
   const count=state.completed.length;
-  const next=lessons.find(l=>!state.completed.includes(l.id))||lessons[0];
-  main.innerHTML=`<section class="hero"><div class="hero-copy"><div class="eyebrow">ENTIENDE PRIMERO. CONSTRUYE DESPUÉS.</div><h1>Aprende Java.<br><em>Piensa en objetos.</em></h1><p>Un concepto a la vez. Explora, prueba tus ideas y gana la confianza para desarrollar tu propia tarea.</p><a class="btn btn-primary primary" href="#${count?state.lastLesson:next.id}">${count?'Continuar aprendiendo':'Comenzar mi ruta'} <span aria-hidden="true">→</span></a></div><div class="hero-art" aria-hidden="true"><div class="code-window"><div class="window-top"><i></i><i></i><i></i><span>una idea, un objeto.java</span></div><pre><b>class</b> Aprendiz {
-  String actitud = <b>"curiosidad"</b>;
-
-  <b>void</b> aprender() {
-    explorar();
-    practicar();
-    volverAIntentar();
-  }
-}</pre></div><div class="floating-tag">✦ El aprendizaje es tuyo.</div></div></section>
-  <div class="overview-strip"><div class="overview-item"><span class="overview-icon">01</span><div><strong>9 pasos con propósito</strong><span>Desde cero hasta conectar ideas</span></div></div><div class="overview-item"><span class="overview-icon">⌘</span><div><strong>Aprende haciendo</strong><span>Ejemplos, retos y experimentos</span></div></div><div class="overview-item"><span class="overview-icon">↗</span><div><strong>Tu propia solución</strong><span>Conceptos, sin resolver tu tarea</span></div></div></div>
-  <section><div class="section-head"><div><h2>Tu ruta de aprendizaje</h2><p>Avanza en orden o vuelve al concepto que necesites.</p></div><div class="progress-caption">${count} de ${lessons.length} completados<div class="progress-track" role="progressbar" aria-label="Módulos completados" aria-valuenow="${count}" aria-valuemin="0" aria-valuemax="9"><span style="width:${count/9*100}%"></span></div></div></div><div class="lesson-grid">${lessons.map((l,i)=>`<a class="lesson-card" href="#${l.id}"><div class="card-meta"><span class="chapter-icon" aria-hidden="true">${l.icon}</span><span>${l.time}</span></div><h3>${String(i+1).padStart(2,'0')} · ${l.short}</h3><p>${l.description}</p><div class="card-bottom"><span>${state.completed.includes(l.id)?'✓ Completado · volver a explorar':'Explorar el concepto'}</span><span aria-hidden="true">↗</span></div></a>`).join('')}</div></section>
-  <div class="soft-banner"><span aria-hidden="true">✧</span><div><strong>¿Y si pudieras ver un objeto por dentro?</strong><p>Crea instancias, cambia su estado y sigue lo que ocurre paso a paso.</p></div><a href="#laboratorio">Ir al laboratorio →</a></div>
-  <div class="note">Este cuaderno acompaña tu aprendizaje. Los ejemplos usan contadores, libros y figuras; el análisis, el código y los diagramas de la tarea los elaboras tú. Los tiempos son orientativos: puedes ir más despacio.</div>`;
+  const next=getNextLesson();
+  const finished=count===lessons.length;
+  const started=count>0 || state.lastLesson!=='base' || Object.keys(state.answers).length>0 || Object.values(state.notes).some(n=>String(n).trim());
+  const stages=[
+    {title:'Construye una base',subtitle:'El lenguaje y sus ideas',range:'01 — 02',items:lessons.slice(0,2)},
+    {title:'Piensa en objetos',subtitle:'Datos, acciones y relaciones',range:'03 — 06',items:lessons.slice(2,6)},
+    {title:'Dale forma a tus ideas',subtitle:'Diseña, organiza y comprueba',range:'07 — 09',items:lessons.slice(6)}
+  ];
+  main.innerHTML=`<div class="dashboard-intro"><div><div class="eyebrow">UN ESPACIO PARA APRENDER A TU RITMO</div><h1>Aprende Java.<br><em>Piensa en objetos.</em></h1><p>No necesitas saberlo todo para empezar.<br>Solo una idea nueva y un lugar donde probarla.</p></div><span class="edition-mark" aria-hidden="true">j.<span>CUADERNO<br>DE IDEAS</span></span></div>
+  <section class="next-lesson${started?' returning':''}" aria-labelledby="next-title"><div class="next-copy"><div class="eyebrow">${finished?'EL APRENDIZAJE CONTINÚA':started?'RETOMA TU RECORRIDO':'TU PRIMER PASO'}</div><div class="next-meta"><span>PASO ${String(lessons.indexOf(next)+1).padStart(2,'0')}</span><span class="meta-dot">·</span><span>${next.time}</span></div><h2 id="next-title">${finished?'Ya tienes una base.<br>Ahora, hazla tuya.':next.title}</h2><p>${finished?'Revisa lo que puedes explicar y vuelve a las ideas que quieras afianzar.':next.goal}</p><div class="next-actions"><a class="btn btn-primary primary" href="#${finished?'preparacion':next.id}">${finished?'Revisar mi preparación':started?'Continuar aprendiendo':'Comenzar mi ruta'} <span aria-hidden="true">→</span></a><a class="next-secondary" href="#ruta">Ver toda la ruta <span aria-hidden="true">↓</span></a></div></div><div class="journey-summary"><div class="journey-ring" role="progressbar" aria-label="Módulos completados" aria-valuenow="${count}" aria-valuemin="0" aria-valuemax="9"><svg viewBox="0 0 160 160" aria-hidden="true"><circle class="ring-base" cx="80" cy="80" r="66"/><circle class="ring-fill" cx="80" cy="80" r="66" pathLength="100" stroke-dasharray="${count/9*100} 100"/></svg><div><strong>${String(count).padStart(2,'0')}<span> / 09</span></strong><small>pasos completados</small></div></div><p>El progreso también es<br>entender algo un poco mejor.</p><div class="journey-principles"><span>Lee</span><i aria-hidden="true">→</i><span>Prueba</span><i aria-hidden="true">→</i><span>Comprende</span></div></div></section>
+  <section id="ruta" class="learning-route" aria-labelledby="route-title"><div class="section-head"><div><div class="eyebrow">DE LA CURIOSIDAD A LA PRÁCTICA</div><h2 id="route-title">Un recorrido. Muchas conexiones.</h2><p>Nueve conceptos, organizados en tres etapas. Puedes volver a cualquiera.</p></div><span class="route-count">3 ETAPAS <span aria-hidden="true">/</span> 9 PASOS</span></div>${stages.map((stage,i)=>`<section class="route-stage"><div class="stage-heading"><span class="stage-index" aria-hidden="true">0${i+1}</span><div><h3>${stage.title}</h3><p>${stage.subtitle}</p></div><span class="stage-range">PASOS ${stage.range}</span></div><div class="lesson-grid">${stage.items.map(l=>{const index=lessons.indexOf(l),done=state.completed.includes(l.id),recommended=!finished&&l.id===next.id;return `<a class="lesson-card${recommended?' recommended':''}${done?' completed':''}" href="#${l.id}"><div class="card-meta"><span class="chapter-icon" aria-hidden="true">${l.icon}</span><span>${l.time}</span></div><span class="card-step">PASO ${String(index+1).padStart(2,'0')}${recommended?'<span class="recommended-label">Tu siguiente paso</span>':''}</span><h3>${l.short}</h3><p>${l.description}</p><div class="card-bottom"><span>${done?'✓ Completado · repasar':recommended?'Empezar aquí':'Explorar el concepto'}</span><span aria-hidden="true">→</span></div></a>`;}).join('')}</div></section>`).join('')}</section>
+  <div class="soft-banner"><span aria-hidden="true">{ }</span><div><strong>Las ideas se entienden mejor cuando las pruebas.</strong><p>Crea objetos, cambia su estado y descubre qué ocurre en el laboratorio.</p></div><a href="#laboratorio">Experimentar →</a></div><p class="learning-promise"><span aria-hidden="true">✦</span> Conceptos y práctica para construir tu propia solución. Sin resolver tu tarea por ti.</p>`;
+}
+function getNextLesson() {
+  const last=lessons.find(l=>l.id===state.lastLesson);
+  if(last && !state.completed.includes(last.id))return last;
+  return lessons.find(l=>!state.completed.includes(l.id))||lessons[0];
 }
 function questionHTML(l,index,prefix='lesson') {
   const q=l.questions[index], key=`${l.id}-${index}`, saved=state.answers[key];
@@ -286,12 +329,14 @@ function render(focus=false){
  document.getElementById('breadcrumb').textContent=lesson?lesson.short:({inicio:'Mi ruta',laboratorio:'Laboratorio de objetos',repaso:'Practicar conceptos',preparacion:'Antes de tu tarea'}[id]||'Mi ruta');
  document.title=`${document.getElementById('breadcrumb').textContent} · Java a tu ritmo`;
  if(lesson)renderLesson(lesson);else if(id==='laboratorio')renderLab();else if(id==='repaso')renderReview();else if(id==='preparacion')renderReady();else dashboard();
- nav();setMenu(false);
- if(focus){main.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
+ nav();setMenu(false);enhanceCode();
+ if(focus){main.focus({preventScroll:true});if(id==='ruta')document.getElementById('ruta')?.scrollIntoView?.({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});else window.scrollTo({top:0,behavior:'instant'});}
 }
 main.addEventListener('input',e=>{if(e.target.matches('[data-note]')){state.notes[e.target.dataset.note]=e.target.value;save();}});
 main.addEventListener('change',e=>{if(e.target.matches('[data-ready]')){state.checks[e.target.dataset.ready]=e.target.checked;save();updateReadiness();}if(e.target.id==='review-filter')renderReview(e.target.value);});
 main.addEventListener('click',e=>{
+ const copy=e.target.closest('[data-copy-code]');
+ if(copy){copyCode(copy);return;}
  const check=e.target.closest('[data-check]');
  if(check){const field=check.closest('fieldset'),selected=field.querySelector('input:checked'),feedback=field.querySelector('.feedback');feedback.hidden=false;if(!selected){feedback.textContent='Elige una opción para comprobar tu razonamiento.';feedback.classList.remove('correct');return;}const [id,index]=check.dataset.check.split('-'),q=lessons.find(l=>l.id===id).questions[Number(index)],answer=Number(selected.value),correct=answer===q.answer;state.answers[check.dataset.check]=answer;save();feedback.classList.toggle('correct',correct);feedback.textContent=(correct?'✓ Bien razonado. ':'Vuelve a pensarlo. ')+q.why;updateScore();return;}
  const complete=e.target.closest('[data-complete]');

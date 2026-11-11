@@ -14,8 +14,13 @@ Abre `index.html` con doble clic. Conserva `styles.css`, `app.js` y la carpeta `
 - Laboratorio visual de contadores con estado independiente e historial de acciones.
 - Notas por módulo, avance, lista de autoevaluación y exportación de la bitácora a texto.
 - Diseño adaptable a móvil y navegación con teclado. Bootstrap está incluido localmente; no se solicitan recursos externos para usar el cuaderno.
+- Portada con siguiente paso sugerido, progreso y tres etapas de aprendizaje.
+- Tipografías locales Literata, Source Sans 3 y JetBrains Mono con licencias OFL en `vendor/fonts/`.
+- Ejemplos con nombre de archivo, resaltado introductorio de Java, botón de copia y salidas esperadas en ejemplos seleccionados.
 
 El laboratorio es una simulación JavaScript. La web no compila ni ejecuta Java y no corrige código escrito en las notas. Los ejercicios de Java se ejecutan en el editor y JDK del estudiante.
+
+El resaltado de sintaxis es una ayuda visual, no un analizador ni un compilador. “Copiar” usa el portapapeles del navegador; si no está disponible, selecciona el código para copiarlo manualmente. Las salidas esperadas son ilustrativas y no se calculan ejecutando Java en el navegador.
 
 ## Datos locales
 
@@ -32,6 +37,8 @@ Los archivos funcionan como sitio estático, con rutas relativas y navegación m
 Se incluye Bootstrap 5.3.8 en `vendor/bootstrap/`: CSS minificado, JavaScript bundle (incluye Popper) y licencia MIT. Los botones y controles de formularios usan sus clases. `styles.css` se carga después y personaliza colores, tipografía y distribución. El menú y los avisos conservan su lógica propia; la clase del aviso se llama `app-toast` para evitar conflictos con el componente Toast de Bootstrap.
 
 Los archivos se descargaron de los enlaces de distribución de la [documentación oficial](https://getbootstrap.com/docs/5.3/getting-started/introduction/). Las comprobaciones verifican sus hashes SHA-384 publicados. Al actualizar Bootstrap, revisa también esos hashes en `tests/verify.cjs` y conserva la licencia. No se utiliza un CDN durante la navegación.
+
+Las tipografías proceden del repositorio [Google Fonts](https://github.com/google/fonts), directorios `ofl/literata`, `ofl/sourcesans3` y `ofl/jetbrainsmono`. Se distribuyen con sus licencias SIL Open Font License. No se realizan llamadas a Google Fonts al leer la web. Conserva toda la carpeta `vendor/` al copiar o publicar el sitio.
 
 ## Contenido y referencias
 
