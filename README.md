@@ -55,3 +55,4 @@ La notación UML se explica a nivel introductorio. Las multiplicidades del ejemp
 ## Verificaciones
 
 `node tests/verify.cjs` comprueba la generación de las vistas, integridad de preguntas, filtros, notas guardadas y escape de texto. Si hay un JDK disponible, también compila los ocho ejemplos completos y comprueba sus resultados. No sustituye una prueba visual ni una prueba de interacción en un navegador.
+La aplicación no requiere una cuenta de usuario.
